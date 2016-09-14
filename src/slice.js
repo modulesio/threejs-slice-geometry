@@ -7,22 +7,32 @@
     var ON = 'on';
 
     window.sliceGeometry = function(geom, plane) {
-        var sliced = new THREE.Geometry();
-        var points;
-        var position;
+        var slicedFront = new THREE.Geometry();
         geom.faces.forEach(function(face, faceIndex) {
-            points = facePoints(geom, face, faceIndex);
-            position = facePosition(plane, points);
-            if (position == FRONT || position == ON) {
-                addFace(sliced, points);
-            } else if (position == STRADDLE) {
-                sliceFace(plane, sliced, points);
+            var pointsFront = facePoints(geom, face, faceIndex);
+            var positionFront = facePosition(plane, pointsFront);
+            if (positionFront == FRONT || positionFront == ON) {
+                addFace(slicedFront, pointsFront);
+            } else if (positionFront == STRADDLE) {
+                sliceFace(plane, slicedFront, pointsFront, FRONT);
             }
         });
-        return sliced;
+
+        var slicedBack = new THREE.Geometry();
+        geom.faces.forEach(function(face, faceIndex) {
+            var pointsBack = facePoints(geom, face, faceIndex);
+            var positionBack = facePosition(plane, pointsBack);
+            if (positionBack == BACK) {
+                addFace(slicedBack, pointsBack);
+            } else if (positionBack == STRADDLE) {
+                sliceFace(plane, slicedBack, pointsBack, BACK);
+            }
+        });
+
+        return [slicedFront, slicedBack];
     };
 
-    var sliceFace = function(plane, geom, points) {
+    var sliceFace = function(plane, geom, points, position) {
         var i;
         var len = points.length;
         var p1;
@@ -38,13 +48,13 @@
             intersection = intersectPlane(p1, p2, plane);
             position1 = vertexPosition(plane, p1.vertex);
             position2 = vertexPosition(plane, p2.vertex);
-            if (position1 == FRONT && slicePoints.indexOf(p1) === -1) {
+            if (position1 == position && slicePoints.indexOf(p1) === -1) {
                 slicePoints.push(p1);
             }
             if (intersection) {
                 slicePoints.push(intersection);
             }
-            if (position2 == FRONT && slicePoints.indexOf(p2) === -1) {
+            if (position2 == position && slicePoints.indexOf(p2) === -1) {
                 slicePoints.push(p2);
             }
         }
